@@ -1,2 +1,2 @@
 # cartilage-transcription-dynamics
-notebooks for manuscript
+notebooks for manuscript and python file for deconvolution analysis
