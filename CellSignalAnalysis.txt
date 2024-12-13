@@ -1,0 +1,91 @@
+rom pandas.core.algorithms import match
+
+usage: cellSignalAnalysisV2_cellSignalAnalysis.py [-h] -b BULK [BULK ...] -s SIGS [SIGS ...]
+                                                  [-rs REFINE_SIGS [REFINE_SIGS ...]] [-w WEIGHTS] [--no-collapse-ref]
+                                                  [--l1-lambda L1_LAMBDA] [--l2-lambda L2_LAMBDA] [-i INSERT_SIZE] [-dg]
+                                                  [-ie INIT_LOG_EXPOSURE] [-r LEARN_RATE] [-p POLL_INTERVAL]
+                                                  [--max-it MAX_IT] [-tl LOG_LIKELIHOOD_TOLERANCE] [-ts SPARSITY_TOLERANCE]
+                                                  output
+
+positional arguments:
+  output                Path where output is saved. Files are created by adding a suffix to this argument for each output
+                        file. For example, results/RCC would produce results/RCC_fit.tsv, results/RCC_sigs.tsv, etc.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -b BULK [BULK ...], --bulk BULK [BULK ...]
+                        Where to get the bulk data from. Bulk data must be provided as a tab separated text file with rows
+                        indicating genes and columns indicating samples. The first column must give gene names, the second
+                        column the effective length of each gene and the third row sample names. In the case of multiple
+                        samples, you can provide multiple arguments or a text file with the names of the files containing
+                        the samples you want, one per line. If multiple samples are in the same file, the gene length is
+                        assumed to be the same across all samples.
+  -s SIGS [SIGS ...], --sigs SIGS [SIGS ...]
+                        Where to get the "cellular signals" that the bulk data will be decomposed into. This must either be
+                        a single cell data-set with annotation indicating how to combine data, or a matrix giving the
+                        already summarised cellular signals. Single cell data must be provided as a sparse matrix in Matrix
+                        Mart format. In this case there are 3 files required, the actual counts, the row labels (gene-
+                        names), and the column labels (cell annotations). These are identified by adding the suffixes .mtx,
+                        _rowNames.tsv, and _columnNames.tsv respectively to the provided argument. Annotation is infered
+                        from the column labels by taking everything between the start of the string and the first colon as
+                        the cell annotation. E.g., the cell with label "T:ACGTATTTACGA-1___STDY3411" would be annotated as
+                        "T". The row and column name files should be one line per row/column with no headers giving the
+                        label in the matching matrix mart count file. If instead a summary file is given, the format must
+                        be the same as with bulk data. The only difference is that the "geneLength" column is no longer
+                        needed and columns are now cellular signals representing populations of cells from single cell data
+                        and must be normalised to sum to 1 across each column. Regardless of wether single cell data or a                        summary file is provided, multiple sources can be provided, either through providing multiple
+                        arguments to this command, or providing the path to a file containing one source per line.
+  -rs REFINE_SIGS [REFINE_SIGS ...], --refine-sigs REFINE_SIGS [REFINE_SIGS ...]
+                        Either a file containing the IDs of cellular signals to include or each cellular signal to include
+                        passed as an argument. The intersection of this list and all those cellular signals specified by -s
+                        are used. If not specified, all signals given by -s are used.
+  -w WEIGHTS, --weights WEIGHTS
+                        Weights for each gene. If omitted, all set to 1. Must be a two column tab delimited file with no
+                        headers, the first column giving gene names, the second the weight to apply for that gene in the
+                        model, a value between 0 and 1.
+  --no-collapse-ref     Usually signatures are created by collapsing cells within a cluster to create a cell specific
+                        signal. This flag will instead use every cell as its own signal.
+  --l1-lambda L1_LAMBDA
+                        Regularisation lambda parameter for L1 norm. Controls how much regularisation to apply, with larger
+                        values providing a stronger penalty and more regularisation. Default does no regularisation. The
+                        scale of lambda is set such that when lambda=1 the negative log-likelihood of the NULL model is
+                        approximately equal to the penalty, assuming that the sum of the exposures equals the sum of the
+                        molecules in bulk (where number of molecules is estimated using the reads/length*insert_size) and
+                        that exposures are uniformly distributed. So a lamda of 0.1 would apply essentially no constraint
+                        until the likelihood became comparable with that of the NULL model, with it becoming comparable in
+                        magnitude around the point where the likelihood of the model has improved over the NULL by 0.1.
+                        Includes the intercept.
+  --l2-lambda L2_LAMBDA
+                        Regularisation lambda parameter for L2 norm. Everything applies as with L1 lambda, except this
+                        penalty does NOT include the intercept.
+  -i INSERT_SIZE, --insert-size INSERT_SIZE
+                        To convert between the cellular signals, which give the relative abundance of molecules, and the
+                        bulk counts, which give counts of fragments mapped to genes, a conversion factor is needed. This is
+                        taken care of by the gene length supplied along with the bulk data, up to a multipliciative
+                        constant. That is, if the model predicts N molecules of gene X, which has length L, the number of
+                        bulk fragment counts predicted is X*L/iSize where iSize is the insert-size of a fragment (the value
+                        specified here). As this value is the same for all genes, getting it wrong will only change the
+                        scale of the raw fitted co-efficients. As these values are basically useless anyway, setting this
+                        parameter 'inaccurately' changes nothing of importance. So don't obsess about it being set
+                        'correctly'.
+  -dg, --drop-zero-sig-genes
+                        Drop any gene that is not expressed in any cellular signals from the fit. With a zero intercept,
+                        these genes would add an infinite contribution to the log-likelihood. So the main way this changes
+                        is the fit is via the goodness-of-fit metric and possibly the size of the required intercept term
+                        if there are many such genes.
+  -ie INIT_LOG_EXPOSURE, --init-log-exposure INIT_LOG_EXPOSURE
+                        Initial value of log-exposure to use when training model. A moderately negative value helps speed
+                        up the fit. If set too far from 0 the fit will fail to find a sensible solution.
+  -r LEARN_RATE, --learn-rate LEARN_RATE
+                        The learn rate to use.
+  -p POLL_INTERVAL, --poll-interval POLL_INTERVAL
+                        Poll fit after this many iterations
+  --max-it MAX_IT       Maximum number of iterations
+  -tl LOG_LIKELIHOOD_TOLERANCE, --log-likelihood-tolerance LOG_LIKELIHOOD_TOLERANCE
+                        Termination condition. Stop when improvement in the log-likelihood less than this.
+  -ts SPARSITY_TOLERANCE, --sparsity-tolerance SPARSITY_TOLERANCE
+                        Termination condition. Stop when improvement in the sparsity is less than this.
+
+
+#in console
+python deconvolution/cellSignalAnalysisV2_cellSignalAnalysis.py msc_chondro1_final -b path/to/bulk/counts/sample/lists.txt -s path/to/singlecell/files -w path/to/gene/weights.tsv -dg
