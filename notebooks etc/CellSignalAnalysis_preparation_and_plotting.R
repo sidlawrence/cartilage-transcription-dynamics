@@ -53,5 +53,5 @@ writeMM(obj = data, file = "cart.mtx")
 ####see txt file to run####
 
 ####plotting####
-fit<- normaliseExposures(tgt = "cartilage_v2/deconvolution/manc_epsc_new/results7_6_23/Kimber_new_7_6_23_fitExposures.tsv")
+fit<- normaliseExposures(tgt = "path/to/cellsignalanalysis/fitexposures.tsv")
 plotExposures(fit = fit, cluster_rows = T, cluster_columns=F, row_names_gp = gpar(fontsize = 6))
