@@ -1,5 +1,5 @@
 # cartilage-transcription-dynamics
-notebooks for manuscript and python file for deconvolution analysis
+notebooks for manuscript 
 For other notebooks used in analysis please see:
 
 https://github.com/Teichlab/Genes2Genes
